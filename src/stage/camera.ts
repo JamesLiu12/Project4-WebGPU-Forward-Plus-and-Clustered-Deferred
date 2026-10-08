@@ -11,7 +11,7 @@ class CameraUniforms {
         this.floatView.set(mat, 0);
     }
 
-    // TODO-2: add extra functions to set values needed for light clustering here
+    // 2: add extra functions to set values needed for light clustering here
     set viewMat(mat: Float32Array) {
         this.floatView.set(mat, 16);
     }
@@ -155,7 +155,7 @@ export class Camera {
         
         this.uniforms.viewProjMat = viewProjMat;
 
-        // TODO-2: write to extra buffers needed for light clustering here
+        // 2: write to extra buffers needed for light clustering here
         this.uniforms.viewMat = viewMat;
         this.uniforms.invProjMat = mat4.inverse(this.projMat);
         this.uniforms.setScreenSize(canvas.width, canvas.height);

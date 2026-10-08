@@ -1,4 +1,4 @@
-// TODO-2: implement the light clustering compute shader
+// 2: implement the light clustering compute shader
 
 // ------------------------------------
 // Calculating cluster bounds:
@@ -22,9 +22,9 @@
 
 //     - Store the number of lights assigned to this cluster.
 
-@group(${bindGroup_scene}) @binding(0) var<storage, read> lightSet: LightSet;
-@group(${bindGroup_scene}) @binding(1) var<storage, read_write> clusterSet: ClusterSet;
-@group(${bindGroup_scene}) @binding(2) var<uniform> camera: CameraUniforms;
+@group(${bindGroup_scene}) @binding(0) var<uniform> camera: CameraUniforms;
+@group(${bindGroup_scene}) @binding(1) var<storage, read> lightSet: LightSet;
+@group(${bindGroup_scene}) @binding(2) var<storage, read_write> clusterSet: ClusterSet;
 
 const NX: u32 = ${clusterCountX}u;
 const NY: u32 = ${clusterCountY}u;

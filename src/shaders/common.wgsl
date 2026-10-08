@@ -10,7 +10,7 @@ struct LightSet {
     lights: array<Light>
 }
 
-// TODO-2: you may want to create a ClusterSet struct similar to LightSet
+// 2: you may want to create a ClusterSet struct similar to LightSet
 
 struct Cluster {
     count: u32,
