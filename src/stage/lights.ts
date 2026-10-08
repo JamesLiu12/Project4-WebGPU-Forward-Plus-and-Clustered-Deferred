@@ -31,9 +31,7 @@ export class Lights {
     // TODO-2: add layouts, pipelines, textures, etc. needed for light clustering here
     static readonly numUintsPerCluster = 1 + shaders.constants.maxLightsPerCluster;
 
-    clustersArray = new Uint32Array(
-        shaders.constants.clusterCountX * shaders.constants.clusterCountY * 
-        shaders.constants.clusterCountZ * Lights.numUintsPerCluster);
+    clustersArray = new Uint32Array(shaders.constants.clusterCount * Lights.numUintsPerCluster);
     clusterSetStorageBuffer: GPUBuffer;
 
     clusteringComputeBindGroupLayout: GPUBindGroupLayout;
@@ -122,6 +120,11 @@ export class Lights {
                     binding: 1,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: { type: "storage" },
+                },
+                { // camera
+                    binding: 2,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { type: "uniform" }
                 }
             ]
         });
@@ -137,6 +140,10 @@ export class Lights {
                 {
                     binding: 1,
                     resource: { buffer: this.clusterSetStorageBuffer }
+                },
+                {
+                    binding: 2,
+                    resource: { buffer: this.camera.uniformsBuffer }
                 }
             ]
         });
@@ -174,6 +181,12 @@ export class Lights {
     doLightClustering(encoder: GPUCommandEncoder) {
         // TODO-2: run the light clustering compute pass(es) here
         // implementing clustering here allows for reusing the code in both Forward+ and Clustered Deferred
+        const computePass = encoder.beginComputePass();
+        computePass.setPipeline(this.clusteringComputePipeline);
+        computePass.setBindGroup(0, this.clusteringComputeBindGroup);
+        const workgroupCount = Math.ceil(shaders.constants.clusterCount / shaders.constants.clusteringWorkgroupSize);
+        computePass.dispatchWorkgroups(workgroupCount);
+        computePass.end();
     }
 
     // CHECKITOUT: this is where the light movement compute shader is dispatched from the host

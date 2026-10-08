@@ -23,6 +23,10 @@ import clusteringComputeRaw from './clustering.cs.wgsl?raw';
 
 // Note that these are declared in a somewhat roundabout way because otherwise minification will drop variables
 // that are unused in host side code.
+const clusterCountX = 16;
+const clusterCountY = 9;
+const clusterCountZ = 24;
+
 export const constants = {
     bindGroup_scene: 0,
     bindGroup_model: 1,
@@ -32,10 +36,12 @@ export const constants = {
 
     lightRadius: 2,
 
-    clusterCountX: 16,
-    clusterCountY: 9,
-    clusterCountZ: 24,
-    maxLightsPerCluster: 128
+    clusterCountX,
+    clusterCountY,
+    clusterCountZ,
+    clusterCount: clusterCountX * clusterCountY * clusterCountZ,
+    maxLightsPerCluster: 128,
+    clusteringWorkgroupSize: 128
 };
 
 // =================================
