@@ -134,7 +134,6 @@ export class Camera {
         const lookPos = vec3.add(this.cameraPos, vec3.scale(this.cameraFront, 1));
         const viewMat = mat4.lookAt(this.cameraPos, lookPos, [0, 1, 0]);
         const viewProjMat = mat4.mul(this.projMat, viewMat);
-        // TODO-1.1: set `this.uniforms.viewProjMat` to the newly calculated view proj mat
         // 1.1: set `this.uniforms.viewProjMat` to the newly calculated view proj mat
         
         this.uniforms.viewProjMat = viewProjMat;
