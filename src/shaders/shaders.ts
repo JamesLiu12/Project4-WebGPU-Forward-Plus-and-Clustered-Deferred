@@ -31,6 +31,7 @@ export const constants = {
     bindGroup_scene: 0,
     bindGroup_model: 1,
     bindGroup_material: 2,
+    bindGroup_gbuffer: 1,
 
     moveLightsWorkgroupSize: 128,
 
