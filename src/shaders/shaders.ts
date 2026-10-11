@@ -41,7 +41,7 @@ export const constants = {
     clusterCountY,
     clusterCountZ,
     clusterCount: clusterCountX * clusterCountY * clusterCountZ,
-    maxLightsPerCluster: 128,
+    maxLightsPerCluster: 1024,
     clusteringWorkgroupSize: 128
 };
 
