@@ -41,13 +41,26 @@ export async function initWebGPU() {
         throw new Error("no appropriate GPUAdapter found");
     }
 
-    device = await adapter.requestDevice();
+    const preferredFormat = navigator.gpu.getPreferredCanvasFormat();
+
+    const useBGRAStorage =
+        preferredFormat === "bgra8unorm" &&
+        adapter.features.has("bgra8unorm-storage");
+
+    canvasFormat = useBGRAStorage ? "bgra8unorm" : "rgba8unorm";
+
+    device = await adapter.requestDevice({
+        requiredFeatures: useBGRAStorage
+            ? ["bgra8unorm-storage"]
+            : []
+    });
 
     context = canvas.getContext("webgpu")!;
-    canvasFormat = navigator.gpu.getPreferredCanvasFormat();
     context.configure({
         device: device,
         format: canvasFormat,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT 
+             | GPUTextureUsage.STORAGE_BINDING
     });
 
     console.log("WebGPU init successsful");

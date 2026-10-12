@@ -11,6 +11,8 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
 
     gbufferBindGroupLayout: GPUBindGroupLayout;
     gbufferBindGroup: GPUBindGroup;
+
+    lightingOutputBindGroupLayout: GPUBindGroupLayout;
     
     depthTexture: GPUTexture;
     depthTextureView: GPUTextureView;
@@ -19,7 +21,10 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
     normalAlbedoTextureView: GPUTextureView;
     
     geometryPipeline: GPURenderPipeline;
-    lightingPipeline: GPURenderPipeline;
+    fullScreenLightingPipeline: GPURenderPipeline;
+    computeLightingPipeline: GPUComputePipeline;
+
+    lightingMode: "compute" | "fullscreen" = "compute";
 
     constructor(stage: Stage) {
         super(stage);
@@ -119,12 +124,12 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
             entries: [
                 { // normalAlbedo
                     binding: 0,
-                    visibility: GPUShaderStage.FRAGMENT,
+                    visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
                     texture: { sampleType: "uint" }
                 },
                 { // depth
                     binding: 1,
-                    visibility: GPUShaderStage.FRAGMENT,
+                    visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
                     texture: { sampleType: "depth" }
                 }
             ]
@@ -145,7 +150,8 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
             ]
         });
 
-        this.lightingPipeline = renderer.device.createRenderPipeline({
+        this.fullScreenLightingPipeline = renderer.device.createRenderPipeline({
+            label: "optimized deferred lighting fullscreen pipeline",
             layout: renderer.device.createPipelineLayout({
                 label: "optimized deferred lighting pipeline layout",
                 bindGroupLayouts: [
@@ -167,6 +173,40 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
                 targets: [
                     { format: renderer.canvasFormat }
                 ]
+            }
+        });
+
+        this.lightingOutputBindGroupLayout = renderer.device.createBindGroupLayout({
+            label: "lighting output bind group layout",
+            entries: [
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.COMPUTE,
+                    storageTexture: {
+                        access: "write-only",
+                        format: renderer.canvasFormat
+                    }
+                }
+            ]
+        });
+
+        this.computeLightingPipeline = renderer.device.createComputePipeline({
+            label: "optimized deferred lighting compute pipeline",
+            layout: renderer.device.createPipelineLayout({
+                label: "optimized deferred compute pipeline layout",
+                bindGroupLayouts: [
+                    this.sceneUniformsBindGroupLayout,
+                    this.gbufferBindGroupLayout,
+                    this.lightingOutputBindGroupLayout
+                ]
+            }),
+            compute: {
+                module: renderer.device.createShaderModule({
+                    label: "optimized deferred lighting compute shader",
+                    code: shaders.getOptimizedDeferredLightingComputeSrc(
+                        renderer.canvasFormat
+                    )
+                })
             }
         });
     }
@@ -213,26 +253,54 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
 
         this.lights.doLightClustering(encoder);
 
-       const canvasTextureView = renderer.context.getCurrentTexture().createView();
-       
-        const lightingPass = encoder.beginRenderPass({
-            label: "deferred lighting pass",
-            colorAttachments: [
-                {
-                    view: canvasTextureView,
-                    clearValue: [0, 0, 0, 0],
-                    loadOp: "clear",
-                    storeOp: "store"
-                }
-            ]
-        });
-        lightingPass.setPipeline(this.lightingPipeline);
+        const canvasTextureView = renderer.context.getCurrentTexture().createView();
 
-        lightingPass.setBindGroup(shaders.constants.bindGroup_scene, this.sceneUniformsBindGroup);
-        lightingPass.setBindGroup(shaders.constants.bindGroup_gbuffer, this.gbufferBindGroup);
+        if (this.lightingMode === "compute") {
+            const outputBindGroup = renderer.device.createBindGroup({
+                label: "lighting output bind group",
+                layout: this.lightingOutputBindGroupLayout,
+                entries: [
+                    {
+                        binding: 0,
+                        resource: canvasTextureView
+                    }
+                ]
+            });
 
-        lightingPass.draw(3);
-        lightingPass.end();
+            const lightingPass = encoder.beginComputePass({
+                label: "optimized deferred lighting compute pass"
+            });
+            lightingPass.setPipeline(this.computeLightingPipeline);
+
+            lightingPass.setBindGroup(shaders.constants.bindGroup_scene, this.sceneUniformsBindGroup);
+            lightingPass.setBindGroup(shaders.constants.bindGroup_gbuffer, this.gbufferBindGroup);
+            lightingPass.setBindGroup(shaders.constants.bindGroup_target, outputBindGroup);
+
+            lightingPass.dispatchWorkgroups(
+                Math.ceil(renderer.canvas.width / 8),
+                Math.ceil(renderer.canvas.height / 8)
+            );
+            lightingPass.end();
+        } else {
+            const lightingPass = encoder.beginRenderPass({
+                label: "deferred lighting pass",
+                colorAttachments: [
+                    {
+                        view: canvasTextureView,
+                        clearValue: [0, 0, 0, 0],
+                        loadOp: "clear",
+                        storeOp: "store"
+                    }
+                ]
+            });
+            lightingPass.setPipeline(this.fullScreenLightingPipeline);
+
+            lightingPass.setBindGroup(shaders.constants.bindGroup_scene, this.sceneUniformsBindGroup);
+            lightingPass.setBindGroup(shaders.constants.bindGroup_gbuffer, this.gbufferBindGroup);
+
+            lightingPass.draw(3);
+            lightingPass.end();
+        }
 
         renderer.device.queue.submit([encoder.finish()]);
     }

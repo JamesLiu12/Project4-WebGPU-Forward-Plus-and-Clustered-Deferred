@@ -15,6 +15,7 @@ import clusteredDeferredFullscreenFragRaw from './clustered_deferred_fullscreen.
 
 import optimizedDeferredFragRaw from './optimized_deferred.fs.wgsl?raw';
 import optimizedDeferredFullscreenFragRaw from './optimized_deferred_fullscreen.fs.wgsl?raw';
+import optimizedDeferredLightingComputeRaw from './optimized_deferred_lighting.cs.wgsl?raw';
 
 import moveLightsComputeRaw from './move_lights.cs.wgsl?raw';
 import clusteringComputeRaw from './clustering.cs.wgsl?raw';
@@ -35,6 +36,7 @@ export const constants = {
     bindGroup_model: 1,
     bindGroup_material: 2,
     bindGroup_gbuffer: 1,
+    bindGroup_target: 2,
 
     moveLightsWorkgroupSize: 128,
 
@@ -71,6 +73,10 @@ export const clusteredDeferredFullscreenFragSrc: string = processShaderRaw(clust
 
 export const optimizedDeferredFragSrc: string = processShaderRaw(optimizedDeferredFragRaw);
 export const optimizedDeferredFullscreenFragSrc: string = processShaderRaw(optimizedDeferredFullscreenFragRaw);
+
+export function getOptimizedDeferredLightingComputeSrc(format: GPUTextureFormat): string {
+    return processShaderRaw(optimizedDeferredLightingComputeRaw).replace("__OUTPUT_FORMAT__", format);
+}
 
 export const moveLightsComputeSrc: string = processShaderRaw(moveLightsComputeRaw);
 export const clusteringComputeSrc: string = processShaderRaw(clusteringComputeRaw);

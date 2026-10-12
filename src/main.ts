@@ -25,9 +25,17 @@ const stats = new Stats();
 stats.showPanel(0);
 document.body.appendChild(stats.dom);
 
+const lightingSettings: { mode: 'compute' | 'fullscreen' } = { mode: 'compute' };
+
 const gui = new GUI();
 gui.add(lights, 'numLights').min(1).max(Lights.maxNumLights).step(1).onChange(() => {
     lights.updateLightSetUniformNumLights();
+});
+
+const lightingModeController = gui.add(lightingSettings, 'mode', ['compute', 'fullscreen']).name('Optimized lighting').onChange(() => {
+    if (renderer instanceof OptimizedDeferredRenderer) {
+        renderer.lightingMode = lightingSettings.mode;
+    }
 });
 
 const stage = new Stage(scene, lights, camera, stats);
@@ -36,6 +44,7 @@ var renderer: Renderer | undefined;
 
 function setRenderer(mode: string) {
     renderer?.stop();
+    lightingModeController.domElement.closest('li')!.style.display = mode === renderModes.optimizedDeferred ? '' : 'none';
 
     switch (mode) {
         case renderModes.naive:
@@ -48,7 +57,9 @@ function setRenderer(mode: string) {
             renderer = new ClusteredDeferredRenderer(stage);
             break;
         case renderModes.optimizedDeferred:
-            renderer = new OptimizedDeferredRenderer(stage);
+            const optimizedRenderer = new OptimizedDeferredRenderer(stage);
+            optimizedRenderer.lightingMode = lightingSettings.mode;
+            renderer = optimizedRenderer;
             break;
     }
 }
