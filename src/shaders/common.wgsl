@@ -44,3 +44,7 @@ fn calculateLightContrib(light: Light, posWorld: vec3f, nor: vec3f) -> vec3f {
     let lambert = max(dot(nor, normalize(vecToLight)), 0.f);
     return light.color * lambert * rangeAttenuation(distToLight);
 }
+
+fn signNotZero(v: vec2f) -> vec2f {
+    return select(vec2f(-1.0), vec2f(1.0), v >= vec2f(0.0));
+}

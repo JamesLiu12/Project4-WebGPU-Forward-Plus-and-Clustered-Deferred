@@ -10,6 +10,7 @@ import { setupLoaders, Scene } from './stage/scene';
 import { Lights } from './stage/lights';
 import { Camera } from './stage/camera';
 import { Stage } from './stage/stage';
+import { OptimizedDeferredRenderer } from './renderers/optimized_deferred';
 
 await initWebGPU();
 setupLoaders();
@@ -46,10 +47,13 @@ function setRenderer(mode: string) {
         case renderModes.clusteredDeferred:
             renderer = new ClusteredDeferredRenderer(stage);
             break;
+        case renderModes.optimizedDeferred:
+            renderer = new OptimizedDeferredRenderer(stage);
+            break;
     }
 }
 
-const renderModes = { naive: 'naive', forwardPlus: 'forward+', clusteredDeferred: 'clustered deferred' };
+const renderModes = { naive: 'naive', forwardPlus: 'forward+', clusteredDeferred: 'clustered deferred', optimizedDeferred: 'optimized deferred' };
 let renderModeController = gui.add({ mode: renderModes.naive }, 'mode', renderModes);
 renderModeController.onChange(setRenderer);
 
