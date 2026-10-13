@@ -11,6 +11,7 @@ import { Lights } from './stage/lights';
 import { Camera } from './stage/camera';
 import { Stage } from './stage/stage';
 import { OptimizedDeferredRenderer } from './renderers/optimized_deferred';
+import { OptimizedForwardPlusRenderer } from './renderers/optimized_forward_plus';
 
 await initWebGPU();
 setupLoaders();
@@ -61,10 +62,20 @@ function setRenderer(mode: string) {
             optimizedRenderer.lightingMode = lightingSettings.mode;
             renderer = optimizedRenderer;
             break;
+        case renderModes.optimizedForwardPlus:
+            renderer = new OptimizedForwardPlusRenderer(stage);
+            break;
     }
 }
 
-const renderModes = { naive: 'naive', forwardPlus: 'forward+', clusteredDeferred: 'clustered deferred', optimizedDeferred: 'optimized deferred' };
+const renderModes = { 
+    naive: 'naive', 
+    forwardPlus: 'forward+', 
+    optimizedForwardPlus: 'optimized forward+', 
+    clusteredDeferred: 'clustered deferred', 
+    optimizedDeferred: 'optimized deferred'
+};
+
 let renderModeController = gui.add({ mode: renderModes.naive }, 'mode', renderModes);
 renderModeController.onChange(setRenderer);
 

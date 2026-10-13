@@ -19,6 +19,7 @@ import optimizedDeferredLightingComputeRaw from './optimized_deferred_lighting.c
 
 import moveLightsComputeRaw from './move_lights.cs.wgsl?raw';
 import clusteringComputeRaw from './clustering.cs.wgsl?raw';
+import depthPreFragRaw from './depth_pre.fs.wgsl?raw';
 
 // CONSTANTS (for use in shaders)
 // =================================
@@ -80,3 +81,4 @@ export function getOptimizedDeferredLightingComputeSrc(format: GPUTextureFormat)
 
 export const moveLightsComputeSrc: string = processShaderRaw(moveLightsComputeRaw);
 export const clusteringComputeSrc: string = processShaderRaw(clusteringComputeRaw);
+export const depthPreFragSrc: string = processShaderRaw(depthPreFragRaw);
