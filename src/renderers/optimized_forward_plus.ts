@@ -3,6 +3,8 @@ import * as shaders from '../shaders/shaders';
 import { Stage } from '../stage/stage';
 
 export class OptimizedForwardPlusRenderer extends renderer.Renderer {
+    cullingEnabled = true;
+
     // 2: add layouts, pipelines, textures, etc. needed for Forward+ here
     // you may need extra uniforms such as the camera view matrix and the canvas resolution
     
@@ -288,36 +290,40 @@ export class OptimizedForwardPlusRenderer extends renderer.Renderer {
 
         depthPrePass.end();
 
-        encoder.clearBuffer(this.activeClustersBuffer);
+        if (this.cullingEnabled) {
+            encoder.clearBuffer(this.activeClustersBuffer);
 
-        const markPass = encoder.beginRenderPass({
-            label: "mark active clusters",
-            colorAttachments: [],
-            depthStencilAttachment: {
-                view: this.depthTextureView,
-                depthReadOnly: true
-            }
-        });
+            const markPass = encoder.beginRenderPass({
+                label: "mark active clusters",
+                colorAttachments: [],
+                depthStencilAttachment: {
+                    view: this.depthTextureView,
+                    depthReadOnly: true
+                }
+            });
 
-        markPass.setPipeline(this.markClustersPipeline);
-        markPass.setBindGroup(0, this.markClustersBindGroup);
-        markPass.draw(3);
-        markPass.end();
+            markPass.setPipeline(this.markClustersPipeline);
+            markPass.setBindGroup(0, this.markClustersBindGroup);
+            markPass.draw(3);
+            markPass.end();
 
-        const clusteringPass = encoder.beginComputePass({
-            label: "depth-culled clustering"
-        });
+            const clusteringPass = encoder.beginComputePass({
+                label: "depth-culled clustering"
+            });
 
-        clusteringPass.setPipeline(this.cullingPipeline);
-        clusteringPass.setBindGroup(0, this.lights.clusteringComputeBindGroup);
-        clusteringPass.setBindGroup(1, this.cullingBindGroup);
-        clusteringPass.dispatchWorkgroups(
-            Math.ceil(
-                shaders.constants.clusterCount
-                / shaders.constants.clusteringWorkgroupSize
-            )
-        );
-        clusteringPass.end();
+            clusteringPass.setPipeline(this.cullingPipeline);
+            clusteringPass.setBindGroup(0, this.lights.clusteringComputeBindGroup);
+            clusteringPass.setBindGroup(1, this.cullingBindGroup);
+            clusteringPass.dispatchWorkgroups(
+                Math.ceil(
+                    shaders.constants.clusterCount
+                    / shaders.constants.clusteringWorkgroupSize
+                )
+            );
+            clusteringPass.end();
+        } else {
+            this.lights.doLightClustering(encoder);
+        }
 
         const canvasTextureView = renderer.context.getCurrentTexture().createView();
 

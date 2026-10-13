@@ -28,6 +28,8 @@ document.body.appendChild(stats.dom);
 
 const lightingSettings: { mode: 'compute' | 'fullscreen' } = { mode: 'compute' };
 
+const cullingSettings = { enabled: true };
+
 const gui = new GUI();
 gui.add(lights, 'numLights').min(1).max(Lights.maxNumLights).step(1).onChange(() => {
     lights.updateLightSetUniformNumLights();
@@ -39,6 +41,12 @@ const lightingModeController = gui.add(lightingSettings, 'mode', ['compute', 'fu
     }
 });
 
+const cullingController = gui.add(cullingSettings, 'enabled').name('Culling').onChange(() => {
+    if (renderer instanceof OptimizedForwardPlusRenderer) {
+        renderer.cullingEnabled = cullingSettings.enabled;
+    }
+});
+
 const stage = new Stage(scene, lights, camera, stats);
 
 var renderer: Renderer | undefined;
@@ -46,6 +54,8 @@ var renderer: Renderer | undefined;
 function setRenderer(mode: string) {
     renderer?.stop();
     lightingModeController.domElement.closest('li')!.style.display = mode === renderModes.optimizedDeferred ? '' : 'none';
+
+    cullingController.domElement.closest('li')!.style.display = mode === renderModes.optimizedForwardPlus ? '' : 'none';
 
     switch (mode) {
         case renderModes.naive:
@@ -63,7 +73,9 @@ function setRenderer(mode: string) {
             renderer = optimizedRenderer;
             break;
         case renderModes.optimizedForwardPlus:
-            renderer = new OptimizedForwardPlusRenderer(stage);
+            const optimizedForwardRenderer = new OptimizedForwardPlusRenderer(stage);
+            optimizedForwardRenderer.cullingEnabled = cullingSettings.enabled;
+            renderer = optimizedForwardRenderer;
             break;
     }
 }
