@@ -9,6 +9,10 @@ import naiveFragRaw from './naive.fs.wgsl?raw';
 
 import forwardPlusFragRaw from './forward_plus.fs.wgsl?raw';
 
+import markClustersFragRaw from './mark_clusters.fs.wgsl?raw';
+import optimizedClusteringComputeRaw from './optimized_clustering.cs.wgsl?raw';
+import optimizedForwardPlusFragRaw from './optimized_forward_plus.fs.wgsl?raw';
+
 import clusteredDeferredFragRaw from './clustered_deferred.fs.wgsl?raw';
 import clusteredDeferredFullscreenVertRaw from './clustered_deferred_fullscreen.vs.wgsl?raw';
 import clusteredDeferredFullscreenFragRaw from './clustered_deferred_fullscreen.fs.wgsl?raw';
@@ -67,6 +71,10 @@ export const naiveVertSrc: string = processShaderRaw(naiveVertRaw);
 export const naiveFragSrc: string = processShaderRaw(naiveFragRaw);
 
 export const forwardPlusFragSrc: string = processShaderRaw(forwardPlusFragRaw);
+
+export const markClustersFragSrc = processShaderRaw(markClustersFragRaw);
+export const optimizedClusteringComputeSrc = processShaderRaw(optimizedClusteringComputeRaw);
+export const optimizedForwardPlusFragSrc = processShaderRaw(optimizedForwardPlusFragRaw);
 
 export const clusteredDeferredFragSrc: string = processShaderRaw(clusteredDeferredFragRaw);
 export const clusteredDeferredFullscreenVertSrc: string = processShaderRaw(clusteredDeferredFullscreenVertRaw);

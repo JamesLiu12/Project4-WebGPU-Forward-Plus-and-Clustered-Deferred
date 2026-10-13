@@ -8,10 +8,23 @@ export class OptimizedForwardPlusRenderer extends renderer.Renderer {
     
     sceneUniformsBindGroupLayout: GPUBindGroupLayout;
     sceneUniformsBindGroup: GPUBindGroup;
-    
+
+    markClustersBindGroupLayout: GPUBindGroupLayout;
+    markClustersBindGroup: GPUBindGroup;
+
+    cullingBindGroupLayout: GPUBindGroupLayout;
+    cullingBindGroup: GPUBindGroup;
+
+    lightingDepthBindGroupLayout: GPUBindGroupLayout;
+    lightingDepthBindGroup: GPUBindGroup;
+
     depthTexture: GPUTexture;
     depthTextureView: GPUTextureView;
-    
+
+    activeClustersBuffer: GPUBuffer;
+
+    markClustersPipeline: GPURenderPipeline;
+    cullingPipeline: GPUComputePipeline;
     depthPrePipeline: GPURenderPipeline;
     lightingPipeline: GPURenderPipeline;
     
@@ -63,9 +76,117 @@ export class OptimizedForwardPlusRenderer extends renderer.Renderer {
         this.depthTexture = renderer.device.createTexture({
             size: [renderer.canvas.width, renderer.canvas.height],
             format: "depth24plus",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
         });
         this.depthTextureView = this.depthTexture.createView();
+
+        this.activeClustersBuffer = renderer.device.createBuffer({
+            size: shaders.constants.clusterCount * 4,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+
+        this.markClustersBindGroupLayout = renderer.device.createBindGroupLayout({
+            entries: [
+                { // camera
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT 
+                        | GPUShaderStage.COMPUTE,
+                    buffer: { type: "uniform" }
+                },
+                { // depth
+                    binding: 1,
+                    visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+                    texture: { sampleType: "depth" }
+                },
+                { // activeClusters
+                    binding: 2,
+                    visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+                    buffer: { type: "storage" }
+                }
+            ]
+        });
+
+        this.markClustersBindGroup = renderer.device.createBindGroup({
+            layout: this.markClustersBindGroupLayout,
+            entries: [
+                { binding: 0, resource: { buffer: this.camera.uniformsBuffer } },
+                { binding: 1, resource: this.depthTextureView },
+                { binding: 2, resource: { buffer: this.activeClustersBuffer } }
+            ]
+        });
+
+        this.markClustersPipeline = renderer.device.createRenderPipeline({
+            layout: renderer.device.createPipelineLayout({
+                label: "mark clusters pipeline layout",
+                bindGroupLayouts: [
+                    this.markClustersBindGroupLayout
+                ]
+            }),
+            vertex: {
+                module: renderer.device.createShaderModule({
+                    code: shaders.clusteredDeferredFullscreenVertSrc
+                })
+            },
+            fragment: {
+                module: renderer.device.createShaderModule({
+                    code: shaders.markClustersFragSrc
+                }),
+                targets: []
+            },
+            depthStencil: {
+                format: "depth24plus",
+                depthWriteEnabled: false,
+                depthCompare: "always"
+            }
+        });
+
+        this.cullingBindGroupLayout = renderer.device.createBindGroupLayout({
+            entries: [
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { type: "read-only-storage" }
+                }
+            ]
+        });
+
+        this.cullingBindGroup = renderer.device.createBindGroup({
+            layout: this.cullingBindGroupLayout,
+            entries: [
+                { binding: 0, resource: { buffer: this.activeClustersBuffer } }
+            ]
+        });
+
+        this.cullingPipeline = renderer.device.createComputePipeline({
+            layout: renderer.device.createPipelineLayout({
+                bindGroupLayouts: [
+                    this.lights.clusteringComputeBindGroupLayout,
+                    this.cullingBindGroupLayout
+                ]
+            }),
+            compute: {
+                module: renderer.device.createShaderModule({
+                    code: shaders.optimizedClusteringComputeSrc
+                }),
+            }
+        });
+
+        this.lightingDepthBindGroupLayout = renderer.device.createBindGroupLayout({
+            entries: [
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: { sampleType: "depth" }
+                }
+            ]
+        });
+
+        this.lightingDepthBindGroup = renderer.device.createBindGroup({
+            layout: this.lightingDepthBindGroupLayout,
+            entries: [
+                { binding: 0, resource: this.depthTextureView }
+            ]
+        });
 
         this.depthPrePipeline = renderer.device.createRenderPipeline({
             label: "depth pre pipeline",
@@ -104,7 +225,8 @@ export class OptimizedForwardPlusRenderer extends renderer.Renderer {
                 bindGroupLayouts: [
                     this.sceneUniformsBindGroupLayout,
                     renderer.modelBindGroupLayout,
-                    renderer.materialBindGroupLayout
+                    renderer.materialBindGroupLayout,
+                    this.lightingDepthBindGroupLayout
                 ]
             }),
             depthStencil: {
@@ -122,7 +244,7 @@ export class OptimizedForwardPlusRenderer extends renderer.Renderer {
             fragment: {
                 module: renderer.device.createShaderModule({
                     label: "forward+ frag shader",
-                    code: shaders.forwardPlusFragSrc,
+                    code: shaders.optimizedForwardPlusFragSrc,
                 }),
                 targets: [
                     {
@@ -166,7 +288,36 @@ export class OptimizedForwardPlusRenderer extends renderer.Renderer {
 
         depthPrePass.end();
 
-        this.lights.doLightClustering(encoder);
+        encoder.clearBuffer(this.activeClustersBuffer);
+
+        const markPass = encoder.beginRenderPass({
+            label: "mark active clusters",
+            colorAttachments: [],
+            depthStencilAttachment: {
+                view: this.depthTextureView,
+                depthReadOnly: true
+            }
+        });
+
+        markPass.setPipeline(this.markClustersPipeline);
+        markPass.setBindGroup(0, this.markClustersBindGroup);
+        markPass.draw(3);
+        markPass.end();
+
+        const clusteringPass = encoder.beginComputePass({
+            label: "depth-culled clustering"
+        });
+
+        clusteringPass.setPipeline(this.cullingPipeline);
+        clusteringPass.setBindGroup(0, this.lights.clusteringComputeBindGroup);
+        clusteringPass.setBindGroup(1, this.cullingBindGroup);
+        clusteringPass.dispatchWorkgroups(
+            Math.ceil(
+                shaders.constants.clusterCount
+                / shaders.constants.clusteringWorkgroupSize
+            )
+        );
+        clusteringPass.end();
 
         const canvasTextureView = renderer.context.getCurrentTexture().createView();
 
@@ -182,13 +333,13 @@ export class OptimizedForwardPlusRenderer extends renderer.Renderer {
             ],
             depthStencilAttachment: {
                 view: this.depthTextureView,
-                depthLoadOp: "load",
-                depthStoreOp: "store"
+                depthReadOnly: true
             }
         });
         lightingPass.setPipeline(this.lightingPipeline);
 
         lightingPass.setBindGroup(shaders.constants.bindGroup_scene, this.sceneUniformsBindGroup);
+        lightingPass.setBindGroup(3, this.lightingDepthBindGroup);
 
         this.scene.iterate(node => {
             lightingPass.setBindGroup(shaders.constants.bindGroup_model, node.modelBindGroup);
