@@ -62,7 +62,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
         this.depthTexture = renderer.device.createTexture({
             size: [renderer.canvas.width, renderer.canvas.height],
             format: "depth24plus",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
         });
         this.depthTextureView = this.depthTexture.createView();
 
@@ -144,6 +144,9 @@ export class ForwardPlusRenderer extends renderer.Renderer {
         });
 
         renderPass.end();
+
+        this.drawClusterHeatmap(encoder, canvasTextureView,
+            this.sceneUniformsBindGroupLayout, this.sceneUniformsBindGroup, this.depthTextureView);
 
         renderer.device.queue.submit([encoder.finish()]);
     }

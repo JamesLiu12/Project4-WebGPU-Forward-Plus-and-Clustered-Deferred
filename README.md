@@ -22,6 +22,12 @@ Clustered Deferred reuses the same light lists. A geometry pass writes world pos
 
 Both clustered methods use a maximum of 1024 light indices per cluster. The light radius is 2 world units. The grid is three-dimensional in both versions; Forward+ here is not limited to a two-dimensional screen-tile grid.
 
+### Cluster Light-Count Debug View
+
+![Light counts in clusters containing visible surfaces](img/heatmap.png)
+
+The GUI's **Lights per cluster** checkbox shows a grayscale heatmap. The depth buffer selects the cluster containing each visible surface in the grid. More lights in that cluster produce a brighter pixel, using a logarithmic scale.
+
 ## Extra Credit Features
 
 ### G-buffer Optimization

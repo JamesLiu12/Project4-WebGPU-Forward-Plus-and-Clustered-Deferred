@@ -30,6 +30,8 @@ const lightingSettings: { mode: 'compute' | 'fullscreen' } = { mode: 'compute' }
 
 const cullingSettings = { enabled: true };
 
+const heatmapSettings = { enabled: false };
+
 const gui = new GUI();
 gui.add(lights, 'numLights').min(1).max(Lights.maxNumLights).step(1).onChange(() => {
     lights.updateLightSetUniformNumLights();
@@ -47,6 +49,12 @@ const cullingController = gui.add(cullingSettings, 'enabled').name('Culling').on
     }
 });
 
+const heatmapController = gui.add(heatmapSettings, 'enabled').name('Lights per cluster').onChange(() => {
+    if (renderer) {
+        renderer.heatmapEnabled = heatmapSettings.enabled;
+    }
+});
+
 const stage = new Stage(scene, lights, camera, stats);
 
 var renderer: Renderer | undefined;
@@ -56,6 +64,7 @@ function setRenderer(mode: string) {
     lightingModeController.domElement.closest('li')!.style.display = mode === renderModes.optimizedDeferred ? '' : 'none';
 
     cullingController.domElement.closest('li')!.style.display = mode === renderModes.optimizedForwardPlus ? '' : 'none';
+    heatmapController.domElement.closest('li')!.style.display = mode === renderModes.naive ? 'none' : '';
 
     switch (mode) {
         case renderModes.naive:
@@ -77,6 +86,9 @@ function setRenderer(mode: string) {
             optimizedForwardRenderer.cullingEnabled = cullingSettings.enabled;
             renderer = optimizedForwardRenderer;
             break;
+    }
+    if (renderer) {
+        renderer.heatmapEnabled = heatmapSettings.enabled;
     }
 }
 

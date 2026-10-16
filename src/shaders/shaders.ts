@@ -8,6 +8,7 @@ import naiveVertRaw from './naive.vs.wgsl?raw';
 import naiveFragRaw from './naive.fs.wgsl?raw';
 
 import forwardPlusFragRaw from './forward_plus.fs.wgsl?raw';
+import clusterHeatmapFragRaw from './cluster_heatmap.fs.wgsl?raw';
 
 import markClustersFragRaw from './mark_clusters.fs.wgsl?raw';
 import optimizedClusteringComputeRaw from './optimized_clustering.cs.wgsl?raw';
@@ -71,6 +72,7 @@ export const naiveVertSrc: string = processShaderRaw(naiveVertRaw);
 export const naiveFragSrc: string = processShaderRaw(naiveFragRaw);
 
 export const forwardPlusFragSrc: string = processShaderRaw(forwardPlusFragRaw);
+export const clusterHeatmapFragSrc: string = processShaderRaw(clusterHeatmapFragRaw);
 
 export const markClustersFragSrc = processShaderRaw(markClustersFragRaw);
 export const optimizedClusteringComputeSrc = processShaderRaw(optimizedClusteringComputeRaw);

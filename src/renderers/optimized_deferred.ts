@@ -302,6 +302,9 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
             lightingPass.end();
         }
 
+        this.drawClusterHeatmap(encoder, canvasTextureView,
+            this.sceneUniformsBindGroupLayout, this.sceneUniformsBindGroup, this.depthTextureView);
+
         renderer.device.queue.submit([encoder.finish()]);
     }
 }
