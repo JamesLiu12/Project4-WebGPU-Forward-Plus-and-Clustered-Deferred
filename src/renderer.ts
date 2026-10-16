@@ -116,7 +116,8 @@ export const vertexBufferLayout: GPUVertexBufferLayout = {
 };
 
 export abstract class Renderer {
-    heatmapEnabled = false;
+    private debugMode = 0;
+    debugUniformBuffer: GPUBuffer;
     private heatmapPipeline?: GPURenderPipeline;
     private heatmapDepthBindGroup?: GPUBindGroup;
 
@@ -135,6 +136,12 @@ export abstract class Renderer {
         this.camera = stage.camera;
         this.stats = stage.stats;
 
+        this.debugUniformBuffer = device.createBuffer({
+            label: "debug view uniform",
+            size: 4,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+
         this.frameRequestId = requestAnimationFrame((t) => this.onFrame(t));
     }
 
@@ -144,9 +151,18 @@ export abstract class Renderer {
 
     protected abstract draw(): void;
 
+    get debugView() {
+        return this.debugMode;
+    }
+
+    set debugView(value: number) {
+        this.debugMode = value;
+        device.queue.writeBuffer(this.debugUniformBuffer, 0, new Uint32Array([value]));
+    }
+
     protected drawClusterHeatmap(encoder: GPUCommandEncoder, view: GPUTextureView,
         layout: GPUBindGroupLayout, bindGroup: GPUBindGroup, depthView: GPUTextureView) {
-        if (!this.heatmapEnabled) {
+        if (this.debugView !== 1) {
             return;
         }
 

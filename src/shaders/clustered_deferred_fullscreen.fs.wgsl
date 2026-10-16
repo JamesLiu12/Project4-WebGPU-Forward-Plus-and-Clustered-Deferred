@@ -5,6 +5,7 @@
 @group(${bindGroup_scene}) @binding(0) var<uniform> camera: CameraUniforms;
 @group(${bindGroup_scene}) @binding(1) var<storage, read> lightSet: LightSet;
 @group(${bindGroup_scene}) @binding(2) var<storage, read> clusterSet: ClusterSet;
+@group(${bindGroup_scene}) @binding(3) var<uniform> debugView: u32;
 
 @group(${bindGroup_gbuffer}) @binding(0) var positionTex: texture_2d<f32>;
 @group(${bindGroup_gbuffer}) @binding(1) var normalTex: texture_2d<f32>;
@@ -28,6 +29,13 @@ fn main(@builtin(position) fragPos: vec4f) -> @location(0) vec4f
     let position = positionSampled.xyz;
     let normal = normalize(textureLoad(normalTex, pixel, 0).xyz);
     let albedo = textureLoad(albedoTex, pixel, 0).rgb;
+
+    if (debugView == 2u) {
+        return vec4f(normal * 0.5 + 0.5, 1.0);
+    }
+    if (debugView == 3u) {
+        return vec4f(albedo, 1.0);
+    }
 
     let screenUV = fragPos.xy / vec2f(camera.screenWidth, camera.screenHeight);
 

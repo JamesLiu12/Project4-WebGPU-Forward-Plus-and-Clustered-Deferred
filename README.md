@@ -26,7 +26,7 @@ Both clustered methods use a maximum of 1024 light indices per cluster. The ligh
 
 ![Light counts in clusters containing visible surfaces](img/heatmap.png)
 
-The GUI's **Lights per cluster** checkbox shows a grayscale heatmap. The depth buffer selects the cluster containing each visible surface in the grid. More lights in that cluster produce a brighter pixel, using a logarithmic scale.
+The GUI's **Debug view** menu includes a **Light count** grayscale heatmap. The depth buffer selects the cluster containing each visible surface in the grid. More lights in that cluster produce a brighter pixel, using a logarithmic scale.
 
 ## Extra Credit Features
 
@@ -35,6 +35,16 @@ The GUI's **Lights per cluster** checkbox shows a grayscale heatmap. The depth b
 The base G-buffer has two `rgba16float` textures for position and normal, plus an `rgba8unorm` albedo texture. I replace these with one `rg32uint` color attachment. One `u32` stores an octahedral normal with `pack2x16snorm`; the other stores albedo with `pack4x8unorm`. Position is reconstructed from the depth buffer and inverse projection matrix.
 
 The color data drops from 20 to 8 bytes per pixel, a **60% reduction**. The packed output is smaller than one `vec4f`. The depth texture is still needed. Packing adds normal decoding and position reconstruction to lighting, so saving memory does not automatically save rendering time.
+
+The GUI's **Debug view** menu exposes the G-buffer attributes through **Decoded normals** and **Decoded albedo**. Both Deferred renderers support these views.
+
+| Decoded normals | Decoded albedo |
+| --- | --- |
+| ![Normals decoded from the packed G-buffer](img/decoded-normals.png) | ![Albedo decoded from the packed G-buffer](img/decoded-albedo.png) |
+
+The normal view unpacks the two SNORM16 components, applies octahedral decoding, and maps the resulting world-space normal from [-1, 1] to RGB [0, 1].
+
+The albedo view uses `unpack4x8unorm` to display the stored material color without point-light contributions.
 
 I also replace fullscreen fragment lighting with an 8×8 compute shader that writes directly to the canvas storage texture. The GUI keeps both lighting paths available.
 

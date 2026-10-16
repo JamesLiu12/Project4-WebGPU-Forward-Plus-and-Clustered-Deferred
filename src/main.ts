@@ -30,7 +30,7 @@ const lightingSettings: { mode: 'compute' | 'fullscreen' } = { mode: 'compute' }
 
 const cullingSettings = { enabled: true };
 
-const heatmapSettings = { enabled: false };
+const debugSettings = { view: '0' };
 
 const gui = new GUI();
 gui.add(lights, 'numLights').min(1).max(Lights.maxNumLights).step(1).onChange(() => {
@@ -49,9 +49,14 @@ const cullingController = gui.add(cullingSettings, 'enabled').name('Culling').on
     }
 });
 
-const heatmapController = gui.add(heatmapSettings, 'enabled').name('Lights per cluster').onChange(() => {
+const debugViewController = gui.add(debugSettings, 'view', {
+    None: 0,
+    'Light count': 1,
+    'Decoded normals': 2,
+    'Decoded albedo': 3
+}).name('Debug view').onChange(() => {
     if (renderer) {
-        renderer.heatmapEnabled = heatmapSettings.enabled;
+        renderer.debugView = Number(debugSettings.view);
     }
 });
 
@@ -64,7 +69,14 @@ function setRenderer(mode: string) {
     lightingModeController.domElement.closest('li')!.style.display = mode === renderModes.optimizedDeferred ? '' : 'none';
 
     cullingController.domElement.closest('li')!.style.display = mode === renderModes.optimizedForwardPlus ? '' : 'none';
-    heatmapController.domElement.closest('li')!.style.display = mode === renderModes.naive ? 'none' : '';
+    debugViewController.domElement.closest('li')!.style.display = mode === renderModes.naive ? 'none' : '';
+    const isDeferred = mode === renderModes.clusteredDeferred || mode === renderModes.optimizedDeferred;
+    debugViewController.domElement.querySelectorAll('option').forEach(option => {
+        option.disabled = !isDeferred && Number(option.value) > 1;
+    });
+    if (!isDeferred && Number(debugSettings.view) > 1) {
+        debugViewController.setValue('0');
+    }
 
     switch (mode) {
         case renderModes.naive:
@@ -88,7 +100,7 @@ function setRenderer(mode: string) {
             break;
     }
     if (renderer) {
-        renderer.heatmapEnabled = heatmapSettings.enabled;
+        renderer.debugView = Number(debugSettings.view);
     }
 }
 

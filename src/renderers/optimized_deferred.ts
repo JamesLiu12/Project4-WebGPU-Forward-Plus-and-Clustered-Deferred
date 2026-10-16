@@ -49,6 +49,11 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
                     binding: 2,
                     visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
                     buffer: { type: 'read-only-storage' }
+                },
+                { // debugView
+                    binding: 3,
+                    visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+                    buffer: { type: "uniform" }
                 }
             ]
         });
@@ -68,6 +73,10 @@ export class OptimizedDeferredRenderer extends renderer.Renderer {
                 {
                     binding: 2,
                     resource: { buffer: this.lights.clusterSetStorageBuffer }
+                },
+                {
+                    binding: 3,
+                    resource: { buffer: this.debugUniformBuffer }
                 },
             ]
         });

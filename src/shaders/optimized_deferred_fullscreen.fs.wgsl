@@ -5,6 +5,7 @@
 @group(${bindGroup_scene}) @binding(0) var<uniform> camera: CameraUniforms;
 @group(${bindGroup_scene}) @binding(1) var<storage, read> lightSet: LightSet;
 @group(${bindGroup_scene}) @binding(2) var<storage, read> clusterSet: ClusterSet;
+@group(${bindGroup_scene}) @binding(3) var<uniform> debugView: u32;
 
 @group(${bindGroup_gbuffer}) @binding(0) var normalAlbedoTex: texture_2d<u32>;
 @group(${bindGroup_gbuffer}) @binding(1) var depthTex: texture_depth_2d;
@@ -68,6 +69,13 @@ fn main(@builtin(position) fragPos: vec4f) -> @location(0) vec4f
     let normalAlbedo = textureLoad(normalAlbedoTex, pixel, 0).xy;
     let normal = octDecode(unpack2x16snorm(normalAlbedo.x));
     let albedo = unpack4x8unorm(normalAlbedo.y).rgb;
+
+    if (debugView == 2u) {
+        return vec4f(normal * 0.5 + 0.5, 1.0);
+    }
+    if (debugView == 3u) {
+        return vec4f(albedo, 1.0);
+    }
 
     let x = u32(clamp(floor(screenUV.x * f32(NX)), 0.0, f32(NX - 1u)));
     let y = u32(clamp(floor(screenUV.y * f32(NY)), 0.0, f32(NY - 1u)));
